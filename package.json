@@ -1,0 +1,14 @@
+{
+  "name": "music-download",
+  "version": "1.0.0",
+  "main": "download-music.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "helsinki",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "fluent-ffmpeg": "^2.1.3"
+  }
+}
