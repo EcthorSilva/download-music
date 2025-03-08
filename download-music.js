@@ -1,4 +1,4 @@
-const { spawn } = require("child_process");
+const { exec } = require("youtube-dl-exec");
 const ffmpeg = require("fluent-ffmpeg");
 const fs = require("fs");
 const path = require("path");
@@ -8,28 +8,14 @@ async function downloadAndConvert(url) {
 
   const outputFile = path.join(__dirname, "%(playlist_index)s - %(title)s.%(ext)s");
 
-  // Iniciar o processo yt-dlp com spawn
-  const ytDlp = spawn("yt-dlp", [
-    "-f", "bestaudio",
-    "--yes-playlist",
-    "-o", outputFile,
-    url
-  ]);
-
-  ytDlp.stdout.on("data", (data) => {
-    console.log(`stdout: ${data}`);
-  });
-
-  ytDlp.stderr.on("data", (data) => {
-    console.error(`stderr: ${data}`);
-  });
-
-  ytDlp.on("close", (code) => {
-    if (code !== 0) {
-      console.error(`yt-dlp terminou com código ${code}`);
-      return;
-    }
-
+  // Iniciar o processo youtube-dl-exec
+  exec(url, {
+    f: "bestaudio",
+    yesPlaylist: true,
+    o: outputFile
+  })
+  .then(output => {
+    console.log(output);
     console.log("Download concluído. Verificando arquivos baixados...");
 
     // Esperar um pouco para garantir que o download foi finalizado
@@ -57,6 +43,7 @@ async function downloadAndConvert(url) {
             console.log(`Conversão concluída! Arquivo salvo como: ${outputMp3}`);
             try {
               fs.unlinkSync(path.join(__dirname, file));  // Deleta o arquivo original
+              console.log(`Arquivo original ${file} deletado.`);
             } catch (err) {
               console.error(`Erro ao deletar o arquivo ${file}:`, err);
             }
@@ -65,6 +52,9 @@ async function downloadAndConvert(url) {
           .save(outputMp3);
       });
     }, 1000); // Atraso de 1 segundo para garantir que o download foi finalizado
+  })
+  .catch(err => {
+    console.error(`Erro ao baixar o áudio: ${err}`);
   });
 }
 
@@ -76,7 +66,7 @@ async function processUrls(urls) {
 
 const input = process.argv[2];
 
-if (input.endsWith(".json")) {
+if (input && input.endsWith(".json")) {
   const filePath = path.join(__dirname, input);
   fs.readFile(filePath, "utf8", (err, data) => {
     if (err) {
@@ -98,6 +88,8 @@ if (input.endsWith(".json")) {
       console.error("Erro ao analisar o arquivo JSON:", err);
     }
   });
-} else {
+} else if (input) {
   downloadAndConvert(input);
+} else {
+  console.error("Nenhum argumento fornecido. Por favor, forneça uma URL ou um caminho para um arquivo JSON.");
 }
